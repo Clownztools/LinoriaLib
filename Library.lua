@@ -1,5 +1,5 @@
 --[[
-    Modern UI Library v2.0 (LinoriaLib Style)
+    Modern UI Library v2.0
     A clean, modern UI framework for Roblox exploits
 ]]
 
@@ -33,26 +33,12 @@ local Options = {}
 getgenv().Toggles = Toggles
 getgenv().Options = Options
 
--- Helper functions for rounded corners
+-- Helper function for rounded corners
 local function AddRoundedCorners(frame, radius)
     radius = radius or 8
     local corners = Instance.new("UICorner")
     corners.CornerRadius = UDim.new(0, radius)
     corners.Parent = frame
-end
-
-local function AddShadow(frame, size)
-    size = size or 10
-    local shadow = Instance.new("Frame")
-    shadow.Name = "Shadow"
-    shadow.BackgroundColor3 = Color3.new(0, 0, 0)
-    shadow.BackgroundTransparency = 0.5
-    shadow.BorderSizePixel = 0
-    shadow.Position = UDim2.new(0, size/2, 0, size/2)
-    shadow.Size = UDim2.new(1, -size, 1, -size)
-    shadow.ZIndex = -1
-    shadow.Parent = frame
-    AddRoundedCorners(shadow, radius)
 end
 
 -- Library table
@@ -62,11 +48,11 @@ local Library = {
     Toggles = Toggles,
     Options = Options,
     
-    -- Default theme (nicer colors)
+    -- Default theme (enhanced colors)
     Theme = {
         Background = Color3.fromRGB(18, 18, 22),
         Surface = Color3.fromRGB(28, 28, 35),
-        Primary = Color3.fromRGB(98, 114, 255),
+        Primary = Color3.fromRGB(98, 114, 255),  -- Brighter accent
         PrimaryDark = Color3.fromRGB(71, 82, 196),
         Text = Color3.fromRGB(255, 255, 255),
         TextSecondary = Color3.fromRGB(160, 160, 170),
@@ -148,10 +134,6 @@ function Library:UpdateColors()
             end
         end
     end
-end
-
-function Library:UpdateColorsUsingRegistry()
-    self:UpdateColors()
 end
 
 function Library:MakeDraggable(frame, dragHandle, offset)
@@ -362,10 +344,10 @@ function Library:CreateWindow(title, options)
         ClipsDescendants = true,
         Parent = ScreenGui,
     })
-    AddRoundedCorners(window, 12)
+    AddRoundedCorners(window, 10)
     
-    -- Shadow
-    self:Create("Frame", {
+    -- Shadow effect
+    local shadow = self:Create("Frame", {
         BackgroundColor3 = Color3.new(0, 0, 0),
         BackgroundTransparency = 0.5,
         BorderSizePixel = 0,
@@ -374,7 +356,7 @@ function Library:CreateWindow(title, options)
         ZIndex = -1,
         Parent = window,
     })
-    AddRoundedCorners(window:FindFirstChildWhichIsA("Frame") or Instance.new("Frame"), 12)
+    AddRoundedCorners(shadow, 10)
     
     -- Title bar
     local titleBar = self:Create("Frame", {
@@ -769,10 +751,6 @@ function Library:CreateWindow(title, options)
                         if callback then callback(value) end
                     end
                     
-                    toggle:OnChanged = function(func)
-                        toggle.Callback = func
-                    end
-                    
                     toggleButton.MouseButton1Click:Connect(function()
                         toggle:SetValue(not toggle.Value)
                     end)
@@ -886,10 +864,6 @@ function Library:CreateWindow(title, options)
                     
                     function slider:SetValue(value)
                         updateSlider(value)
-                    end
-                    
-                    slider:OnChanged = function(func)
-                        slider.Callback = func
                     end
                     
                     Options[id] = slider
@@ -1083,10 +1057,6 @@ function Library:CreateWindow(title, options)
                         updateDropdownList()
                     end
                     
-                    dropdown:OnChanged = function(func)
-                        dropdown.Callback = func
-                    end
-                    
                     Options[id] = dropdown
                     return dropdown
                 end,
@@ -1156,10 +1126,6 @@ function Library:CreateWindow(title, options)
                         self:AttemptSave()
                     end
                     
-                    input:OnChanged = function(func)
-                        input.Callback = func
-                    end
-                    
                     Options[id] = input
                     return input
                 end,
@@ -1210,18 +1176,19 @@ function Library:CreateWindow(title, options)
                         self:AttemptSave()
                     end
                     
-                    -- Create color picker popup
+                    -- Create color picker popup (simplified with RGB sliders)
                     local function showColorPicker()
+                        -- Create popup frame
                         local popup = self:Create("Frame", {
                             BackgroundColor3 = self.Theme.Surface,
                             BorderColor3 = self.Theme.Border,
                             BorderSizePixel = 1,
                             Position = UDim2.fromOffset(Mouse.X + 10, Mouse.Y + 10),
-                            Size = UDim2.fromOffset(220, 170),
+                            Size = UDim2.fromOffset(200, 150),
                             ZIndex = 100,
                             Parent = ScreenGui,
                         })
-                        AddRoundedCorners(popup, 10)
+                        AddRoundedCorners(popup, 8)
                         
                         -- Title bar
                         local popupTitle = self:Create("Frame", {
@@ -1264,73 +1231,30 @@ function Library:CreateWindow(title, options)
                         -- RGB sliders
                         local rSlider, gSlider, bSlider
                         
-                        local function createTempSlider(min, max, val, colorName, onChange)
-                            local tempFrame = self:Create("Frame", {
-                                BackgroundTransparency = 1,
-                                Size = UDim2.new(1, 0, 0, 40),
-                                Parent = content,
-                            })
-                            
-                            local tempLabel = self:Create("TextLabel", {
-                                BackgroundTransparency = 1,
-                                Size = UDim2.new(1, 0, 0, 16),
-                                Font = self.Fonts.UI,
-                                Text = colorName,
-                                TextColor3 = self.Theme.Text,
-                                TextSize = 12,
-                                TextXAlignment = Enum.TextXAlignment.Left,
-                                Parent = tempFrame,
-                            })
-                            
-                            local tempBg = self:Create("Frame", {
-                                BackgroundColor3 = self.Theme.Background,
-                                BorderColor3 = self.Theme.Border,
-                                BorderSizePixel = 1,
-                                Position = UDim2.new(0, 0, 0, 18),
-                                Size = UDim2.new(1, 0, 0, 3),
-                                Parent = tempFrame,
-                            })
-                            AddRoundedCorners(tempBg, 2)
-                            
-                            local tempFill = self:Create("Frame", {
-                                BackgroundColor3 = self.Theme.Primary,
-                                BorderSizePixel = 0,
-                                Size = UDim2.new((val - min) / (max - min), 0, 1, 0),
-                                Parent = tempBg,
-                            })
-                            AddRoundedCorners(tempFill, 2)
-                            
-                            local tempHandle = self:Create("TextButton", {
-                                BackgroundColor3 = self.Theme.Primary,
-                                BorderSizePixel = 0,
-                                Position = UDim2.new((val - min) / (max - min), -4, 0, -3),
-                                Size = UDim2.new(0, 8, 0, 8),
-                                Text = "",
-                                Parent = tempBg,
-                            })
-                            AddRoundedCorners(tempHandle, 4)
-                            
-                            local dragging = false
-                            tempHandle.MouseButton1Down:Connect(function()
-                                dragging = true
-                                while dragging and InputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                                    local percent = math.clamp((Mouse.X - tempBg.AbsolutePosition.X) / tempBg.AbsoluteSize.X, 0, 1)
-                                    local value = min + (max - min) * percent
-                                    onChange(value)
-                                    tempFill.Size = UDim2.new(percent, 0, 1, 0)
-                                    tempHandle.Position = UDim2.new(percent, -4, 0, -3)
-                                    RunService.RenderStepped:Wait()
-                                end
-                                dragging = false
-                            end)
-                            
-                            return tempHandle
-                        end
+                        rSlider = groupboxAPI.AddSlider(nil, "Red", 0, 1, r, 2, "", function(val)
+                            r = val
+                            updateDisplay()
+                            if rSlider then rSlider:SetValue(r) end
+                        end)
                         
-                        createTempSlider(0, 1, r, "Red", function(val) r = val; updateDisplay() end)
-                        createTempSlider(0, 1, g, "Green", function(val) g = val; updateDisplay() end)
-                        createTempSlider(0, 1, b, "Blue", function(val) b = val; updateDisplay() end)
+                        gSlider = groupboxAPI.AddSlider(nil, "Green", 0, 1, g, 2, "", function(val)
+                            g = val
+                            updateDisplay()
+                            if gSlider then gSlider:SetValue(g) end
+                        end)
                         
+                        bSlider = groupboxAPI.AddSlider(nil, "Blue", 0, 1, b, 2, "", function(val)
+                            b = val
+                            updateDisplay()
+                            if bSlider then bSlider:SetValue(b) end
+                        end)
+                        
+                        -- Reparent sliders to popup content
+                        if rSlider and rSlider.Frame then rSlider.Frame.Parent = content end
+                        if gSlider and gSlider.Frame then gSlider.Frame.Parent = content end
+                        if bSlider and bSlider.Frame then bSlider.Frame.Parent = content end
+                        
+                        -- Update content layout
                         self:Create("UIListLayout", {
                             Padding = UDim.new(0, 4),
                             FillDirection = Enum.FillDirection.Vertical,
@@ -1342,6 +1266,7 @@ function Library:CreateWindow(title, options)
                             popup:Destroy()
                         end)
                         
+                        -- Close when clicking outside
                         local function onInputBegan(input)
                             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                                 local mousePos = Vector2.new(Mouse.X, Mouse.Y)
@@ -1364,10 +1289,6 @@ function Library:CreateWindow(title, options)
                     function colorPicker:SetValueRGB(color)
                         r, g, b = color.R, color.G, color.B
                         updateDisplay()
-                    end
-                    
-                    colorPicker:OnChanged = function(func)
-                        colorPicker.Callback = func
                     end
                     
                     Options[id] = colorPicker
@@ -1394,17 +1315,7 @@ function Library:CreateWindow(title, options)
                         TextXAlignment = centered and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left,
                         Parent = container,
                     })
-                    
-                    function label:SetText(newText)
-                        label.Text = newText
-                    end
-                    
                     return label
-                end,
-                
-                AddKeyPicker = function(id, text, default, callback)
-                    -- Placeholder for keypicker - same as toggle for now
-                    return groupboxAPI.AddToggle(id, text, default, callback)
                 end,
             }
             

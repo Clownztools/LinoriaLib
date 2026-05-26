@@ -81,23 +81,6 @@ local function GetTextBounds(Text, Font, Size)
     return TextService:GetTextSize(Text, Size, Font, Vector2.new(1920, 1080))
 end
 
-local function HexToRGB(hex)
-    hex = hex:gsub("#", "")
-    return Color3.fromRGB(
-        tonumber("0x" .. hex:sub(1, 2)) or 0,
-        tonumber("0x" .. hex:sub(3, 4)) or 0,
-        tonumber("0x" .. hex:sub(5, 6)) or 0
-    )
-end
-
-local function RGBToHex(color)
-    return string.format("#%02x%02x%02x",
-        math.floor(color.R * 255),
-        math.floor(color.G * 255),
-        math.floor(color.B * 255)
-    )
-end
-
 function Library:Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties or {}) do
@@ -291,6 +274,52 @@ function Library:Notify(message, type, duration)
     return notification
 end
 
+function Library:AddTooltip(text, instance)
+    local tooltip = self:Create("Frame", {
+        BackgroundColor3 = self.Theme.Surface,
+        BorderColor3 = self.Theme.Border,
+        BorderSizePixel = 1,
+        Size = UDim2.new(0, 0, 0, 0),
+        Visible = false,
+        ZIndex = 1000,
+        Parent = ScreenGui,
+    })
+    
+    local label = self:Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 8, 0, 4),
+        Size = UDim2.new(1, -16, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        Font = self.Fonts.UI,
+        Text = text,
+        TextColor3 = self.Theme.Text,
+        TextSize = 12,
+        TextWrapped = true,
+        Parent = tooltip,
+    })
+    
+    local active = false
+    
+    instance.MouseEnter:Connect(function()
+        local textSize = GetTextBounds(text, self.Fonts.UI, 12)
+        tooltip.Size = UDim2.new(0, textSize.X + 16, 0, textSize.Y + 8)
+        active = true
+        tooltip.Visible = true
+        
+        while active and tooltip.Visible do
+            tooltip.Position = UDim2.fromOffset(Mouse.X + 15, Mouse.Y + 15)
+            RunService.Heartbeat:Wait()
+        end
+    end)
+    
+    instance.MouseLeave:Connect(function()
+        active = false
+        tooltip.Visible = false
+    end)
+    
+    return tooltip
+end
+
 function Library:CreateWindow(title, options)
     options = options or {}
     
@@ -408,51 +437,6 @@ function Library:CreateWindow(title, options)
         Parent = window,
     })
     
-    -- Left and right columns
-    local leftColumn = self:Create("ScrollingFrame", {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0.5, -8, 1, 0),
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = self.Theme.Primary,
-        Parent = contentArea,
-    })
-    
-    local rightColumn = self:Create("ScrollingFrame", {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 8, 0, 0),
-        Size = UDim2.new(0.5, -8, 1, 0),
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        ScrollBarThickness = 4,
-        ScrollBarImageColor3 = self.Theme.Primary,
-        Parent = contentArea,
-    })
-    
-    -- Column layouts
-    local leftLayout = self:Create("UIListLayout", {
-        Padding = UDim.new(0, 12),
-        FillDirection = Enum.FillDirection.Vertical,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = leftColumn,
-    })
-    
-    local rightLayout = self:Create("UIListLayout", {
-        Padding = UDim.new(0, 12),
-        FillDirection = Enum.FillDirection.Vertical,
-        SortOrder = Enum.SortOrder.LayoutOrder,
-        Parent = rightColumn,
-    })
-    
-    -- Update canvas sizes
-    leftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        leftColumn.CanvasSize = UDim2.new(0, 0, 0, leftLayout.AbsoluteContentSize.Y)
-    end)
-    
-    rightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        rightColumn.CanvasSize = UDim2.new(0, 0, 0, rightLayout.AbsoluteContentSize.Y)
-    end)
-    
     -- Make draggable
     self:MakeDraggable(window, titleBar, 45)
     
@@ -475,10 +459,6 @@ function Library:CreateWindow(title, options)
     local windowAPI = {
         Frame = window,
         Tabs = tabs,
-        LeftColumn = leftColumn,
-        RightColumn = rightColumn,
-        LeftLayout = leftLayout,
-        RightLayout = rightLayout,
         
         AddTab = function(name)
             -- Create tab button
@@ -662,6 +642,9 @@ function Library:CreateWindow(title, options)
                         Parent = container,
                     })
                     
+                    -- Store callback
+                    button.Callback = callback
+                    
                     -- Hover effect
                     button.MouseEnter:Connect(function()
                         TweenService:Create(button, TweenInfo.new(0.2), {
@@ -679,11 +662,12 @@ function Library:CreateWindow(title, options)
                         if options.DoubleClick then
                             if not button.DoubleClickReady then
                                 button.DoubleClickReady = true
+                                local originalText = button.Text
                                 button.Text = "Are you sure?"
                                 task.delay(1.5, function()
                                     if button then
                                         button.DoubleClickReady = false
-                                        button.Text = text
+                                        button.Text = originalText
                                     end
                                 end)
                             else
@@ -695,6 +679,11 @@ function Library:CreateWindow(title, options)
                             if callback then callback() end
                         end
                     end)
+                    
+                    -- Add tooltip if provided
+                    if options.Tooltip then
+                        self:AddTooltip(options.Tooltip, button)
+                    end
                     
                     return button
                 end,
@@ -899,6 +888,20 @@ function Library:CreateWindow(title, options)
                         Parent = dropdownFrame,
                     })
                     
+                    -- Display text for selected value
+                    local displayText = ""
+                    if not multi and dropdown.Value then
+                        displayText = dropdown.Value
+                    elseif multi then
+                        local selected = {}
+                        for k, v in pairs(dropdown.Value) do
+                            if v then table.insert(selected, k) end
+                        end
+                        displayText = #selected > 0 and table.concat(selected, ", ") or "Select..."
+                    else
+                        displayText = "Select..."
+                    end
+                    
                     local selectButton = self:Create("TextButton", {
                         BackgroundColor3 = self.Theme.Background,
                         BorderColor3 = self.Theme.Border,
@@ -906,7 +909,7 @@ function Library:CreateWindow(title, options)
                         Position = UDim2.new(0, 0, 0, 22),
                         Size = UDim2.new(1, 0, 0, 30),
                         Font = self.Fonts.UI,
-                        Text = dropdown.Value or "Select...",
+                        Text = displayText,
                         TextColor3 = self.Theme.Text,
                         TextSize = 13,
                         TextXAlignment = Enum.TextXAlignment.Left,
@@ -944,6 +947,7 @@ function Library:CreateWindow(title, options)
                     })
                     
                     local function updateDropdownList()
+                        -- Clear existing items
                         for _, child in ipairs(dropdownList:GetChildren()) do
                             if child:IsA("TextButton") then
                                 child:Destroy()
@@ -965,11 +969,14 @@ function Library:CreateWindow(title, options)
                             })
                             
                             item.MouseEnter:Connect(function()
-                                item.BackgroundColor3 = self.Theme.Primary
+                                if not (multi and dropdown.Value[value]) and dropdown.Value ~= value then
+                                    item.BackgroundColor3 = self.Theme.Primary
+                                end
                             end)
                             
                             item.MouseLeave:Connect(function()
-                                item.BackgroundColor3 = isSelected and self.Theme.Primary or self.Theme.Surface
+                                local stillSelected = multi and dropdown.Value[value] or dropdown.Value == value
+                                item.BackgroundColor3 = stillSelected and self.Theme.Primary or self.Theme.Surface
                             end)
                             
                             item.MouseButton1Click:Connect(function()
@@ -992,9 +999,6 @@ function Library:CreateWindow(title, options)
                                 if callback then callback(dropdown.Value) end
                                 self:AttemptSave()
                             end)
-                            
-                            isSelected = multi and dropdown.Value[value] or dropdown.Value == value
-                            item.BackgroundColor3 = isSelected and self.Theme.Primary or self.Theme.Surface
                         end
                         
                         local count = #values
@@ -1013,15 +1017,15 @@ function Library:CreateWindow(title, options)
                     
                     function dropdown:SetValue(value)
                         if multi then
-                            dropdown.Value = value
+                            dropdown.Value = value or {}
                             local selectedText = {}
-                            for k, v in pairs(value) do
+                            for k, v in pairs(dropdown.Value) do
                                 if v then table.insert(selectedText, k) end
                             end
                             selectButton.Text = #selectedText > 0 and table.concat(selectedText, ", ") or "Select..."
                         else
                             dropdown.Value = value
-                            selectButton.Text = value
+                            selectButton.Text = value or "Select..."
                         end
                         updateDropdownList()
                         if callback then callback(dropdown.Value) end
@@ -1140,42 +1144,127 @@ function Library:CreateWindow(title, options)
                         Parent = pickerFrame,
                     })
                     
-                    -- Simplified color picker (expand as needed)
+                    -- Store RGB values
+                    local r, g, b = colorPicker.Value.R, colorPicker.Value.G, colorPicker.Value.B
+                    
                     local function updateDisplay()
+                        colorPicker.Value = Color3.new(r, g, b)
                         colorDisplay.BackgroundColor3 = colorPicker.Value
                         if callback then callback(colorPicker.Value) end
                         self:AttemptSave()
                     end
                     
-                    -- Basic RGB sliders for color picking
-                    local r = colorPicker.Value.R
-                    local g = colorPicker.Value.G
-                    local b = colorPicker.Value.B
+                    -- Create color picker popup (simplified with RGB sliders)
+                    local function showColorPicker()
+                        -- Create popup frame
+                        local popup = self:Create("Frame", {
+                            BackgroundColor3 = self.Theme.Surface,
+                            BorderColor3 = self.Theme.Border,
+                            BorderSizePixel = 1,
+                            Position = UDim2.fromOffset(Mouse.X + 10, Mouse.Y + 10),
+                            Size = UDim2.fromOffset(200, 150),
+                            ZIndex = 100,
+                            Parent = ScreenGui,
+                        })
+                        
+                        -- Title bar
+                        local popupTitle = self:Create("Frame", {
+                            BackgroundColor3 = self.Theme.Background,
+                            Size = UDim2.new(1, 0, 0, 30),
+                            Parent = popup,
+                        })
+                        
+                        self:Create("TextLabel", {
+                            BackgroundTransparency = 1,
+                            Position = UDim2.new(0, 8, 0, 0),
+                            Size = UDim2.new(1, -16, 1, 0),
+                            Font = self.Fonts.UI,
+                            Text = "Color Picker",
+                            TextColor3 = self.Theme.Text,
+                            TextSize = 12,
+                            TextXAlignment = Enum.TextXAlignment.Left,
+                            Parent = popupTitle,
+                        })
+                        
+                        local closeBtn = self:Create("TextButton", {
+                            BackgroundTransparency = 1,
+                            Position = UDim2.new(1, -25, 0, 0),
+                            Size = UDim2.new(0, 25, 0, 30),
+                            Font = self.Fonts.UI,
+                            Text = "✕",
+                            TextColor3 = self.Theme.TextSecondary,
+                            TextSize = 12,
+                            Parent = popupTitle,
+                        })
+                        
+                        -- Content
+                        local content = self:Create("Frame", {
+                            BackgroundTransparency = 1,
+                            Position = UDim2.new(0, 8, 0, 35),
+                            Size = UDim2.new(1, -16, 0, -43),
+                            Parent = popup,
+                        })
+                        
+                        -- RGB sliders
+                        local rSlider, gSlider, bSlider
+                        
+                        rSlider = groupboxAPI.AddSlider(nil, "Red", 0, 1, r, 2, "", function(val)
+                            r = val
+                            updateDisplay()
+                            if rSlider then rSlider:SetValue(r) end
+                        end)
+                        
+                        gSlider = groupboxAPI.AddSlider(nil, "Green", 0, 1, g, 2, "", function(val)
+                            g = val
+                            updateDisplay()
+                            if gSlider then gSlider:SetValue(g) end
+                        end)
+                        
+                        bSlider = groupboxAPI.AddSlider(nil, "Blue", 0, 1, b, 2, "", function(val)
+                            b = val
+                            updateDisplay()
+                            if bSlider then bSlider:SetValue(b) end
+                        end)
+                        
+                        -- Reparent sliders to popup content
+                        if rSlider and rSlider.Frame then rSlider.Frame.Parent = content end
+                        if gSlider and gSlider.Frame then gSlider.Frame.Parent = content end
+                        if bSlider and bSlider.Frame then bSlider.Frame.Parent = content end
+                        
+                        -- Update content layout
+                        self:Create("UIListLayout", {
+                            Padding = UDim.new(0, 4),
+                            FillDirection = Enum.FillDirection.Vertical,
+                            SortOrder = Enum.SortOrder.LayoutOrder,
+                            Parent = content,
+                        })
+                        
+                        closeBtn.MouseButton1Click:Connect(function()
+                            popup:Destroy()
+                        end)
+                        
+                        -- Close when clicking outside
+                        local function onInputBegan(input)
+                            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                                local mousePos = Vector2.new(Mouse.X, Mouse.Y)
+                                local absPos = popup.AbsolutePosition
+                                local absSize = popup.AbsoluteSize
+                                
+                                if mousePos.X < absPos.X or mousePos.X > absPos.X + absSize.X or
+                                   mousePos.Y < absPos.Y or mousePos.Y > absPos.Y + absSize.Y then
+                                    popup:Destroy()
+                                    InputService.InputBegan:Disconnect(connection)
+                                end
+                            end
+                        end
+                        
+                        local connection = InputService.InputBegan:Connect(onInputBegan)
+                    end
                     
-                    local rSlider = self:AddSlider(nil, "Red", 0, 1, r, 2, "", function(val)
-                        r = val
-                        colorPicker.Value = Color3.new(r, g, b)
-                        updateDisplay()
-                    end)
-                    
-                    local gSlider = self:AddSlider(nil, "Green", 0, 1, g, 2, "", function(val)
-                        g = val
-                        colorPicker.Value = Color3.new(r, g, b)
-                        updateDisplay()
-                    end)
-                    
-                    local bSlider = self:AddSlider(nil, "Blue", 0, 1, b, 2, "", function(val)
-                        b = val
-                        colorPicker.Value = Color3.new(r, g, b)
-                        updateDisplay()
-                    end)
+                    colorDisplay.MouseButton1Click:Connect(showColorPicker)
                     
                     function colorPicker:SetValueRGB(color)
-                        colorPicker.Value = color
                         r, g, b = color.R, color.G, color.B
-                        if rSlider then rSlider:SetValue(r) end
-                        if gSlider then gSlider:SetValue(g) end
-                        if bSlider then bSlider:SetValue(b) end
                         updateDisplay()
                     end
                     
@@ -1238,52 +1327,6 @@ function Library:CreateWindow(title, options)
     return windowAPI
 end
 
-function Library:AddTooltip(text, instance)
-    local tooltip = self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Surface,
-        BorderColor3 = self.Theme.Border,
-        BorderSizePixel = 1,
-        Size = UDim2.new(0, 0, 0, 0),
-        Visible = false,
-        ZIndex = 1000,
-        Parent = ScreenGui,
-    })
-    
-    local label = self:Create("TextLabel", {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 8, 0, 4),
-        Size = UDim2.new(1, -16, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        Font = self.Fonts.UI,
-        Text = text,
-        TextColor3 = self.Theme.Text,
-        TextSize = 12,
-        TextWrapped = true,
-        Parent = tooltip,
-    })
-    
-    local active = false
-    
-    instance.MouseEnter:Connect(function()
-        local textSize = GetTextBounds(text, self.Fonts.UI, 12)
-        tooltip.Size = UDim2.new(0, textSize.X + 16, 0, textSize.Y + 8)
-        active = true
-        tooltip.Visible = true
-        
-        while active and tooltip.Visible do
-            tooltip.Position = UDim2.fromOffset(Mouse.X + 15, Mouse.Y + 15)
-            RunService.Heartbeat:Wait()
-        end
-    end)
-    
-    instance.MouseLeave:Connect(function()
-        active = false
-        tooltip.Visible = false
-    end)
-    
-    return tooltip
-end
-
 function Library:AttemptSave()
     if self.SaveManager then
         self.SaveManager:Save()
@@ -1303,29 +1346,6 @@ end
 
 function Library:OnUnload(callback)
     self.OnUnload = callback
-end
-
--- Setup keybind system
-do
-    Library.KeybindFrame = Library:Create("Frame", {
-        BackgroundColor3 = Library.Theme.Surface,
-        BorderColor3 = Library.Theme.Border,
-        BorderSizePixel = 1,
-        Position = UDim2.new(0, 10, 0.5, -100),
-        Size = UDim2.new(0, 200, 0, 0),
-        Visible = false,
-        ZIndex = 100,
-        Parent = ScreenGui,
-    })
-    
-    Library.KeybindContainer = Library:Create("Frame", {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 8, 0, 30),
-        Size = UDim2.new(1, -16, 1, -38),
-        Parent = Library.KeybindFrame,
-    })
-    
-    Library:MakeDraggable(Library.KeybindFrame, Library.KeybindFrame, 30)
 end
 
 return Library

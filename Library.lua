@@ -1,5 +1,5 @@
 --[[
-    Modern UI Library v2.0
+    Modern UI Library v2.0 - LinoriaLib Compatible
     A clean, modern UI framework for Roblox exploits
 ]]
 
@@ -49,18 +49,11 @@ local Library = {
     Options = Options,
     
     -- Default theme (enhanced colors)
-    Theme = {
-        Background = Color3.fromRGB(18, 18, 22),
-        Surface = Color3.fromRGB(28, 28, 35),
-        Primary = Color3.fromRGB(98, 114, 255),  -- Brighter accent
-        PrimaryDark = Color3.fromRGB(71, 82, 196),
-        Text = Color3.fromRGB(255, 255, 255),
-        TextSecondary = Color3.fromRGB(160, 160, 170),
-        Border = Color3.fromRGB(45, 45, 55),
-        Danger = Color3.fromRGB(255, 85, 85),
-        Success = Color3.fromRGB(80, 220, 120),
-        Warning = Color3.fromRGB(255, 180, 70),
-    },
+    BackgroundColor = Color3.fromRGB(18, 18, 22),
+    MainColor = Color3.fromRGB(28, 28, 35),
+    AccentColor = Color3.fromRGB(98, 114, 255),
+    OutlineColor = Color3.fromRGB(45, 45, 55),
+    FontColor = Color3.fromRGB(255, 255, 255),
     
     -- Fonts
     Fonts = {
@@ -129,11 +122,15 @@ function Library:UpdateColors()
     
     for _, item in ipairs(self.Registry) do
         for prop, colorKey in pairs(item.Properties) do
-            if self.Theme[colorKey] then
-                item.Instance[prop] = self.Theme[colorKey]
+            if self[colorKey] then
+                item.Instance[prop] = self[colorKey]
             end
         end
     end
+end
+
+function Library:UpdateColorsUsingRegistry()
+    self:UpdateColors()
 end
 
 function Library:MakeDraggable(frame, dragHandle, offset)
@@ -200,19 +197,19 @@ function Library:Notify(message, type, duration)
     end
     
     -- Get color based on type
-    local accentColor = self.Theme.Primary
+    local accentColor = self.AccentColor
     if type == "error" then
-        accentColor = self.Theme.Danger
+        accentColor = Color3.fromRGB(255, 85, 85)
     elseif type == "success" then
-        accentColor = self.Theme.Success
+        accentColor = Color3.fromRGB(80, 220, 120)
     elseif type == "warning" then
-        accentColor = self.Theme.Warning
+        accentColor = Color3.fromRGB(255, 180, 70)
     end
     
     -- Create notification
     local notification = self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Surface,
-        BorderColor3 = self.Theme.Border,
+        BackgroundColor3 = self.MainColor,
+        BorderColor3 = self.OutlineColor,
         BorderSizePixel = 1,
         Size = UDim2.new(0, 300, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
@@ -237,7 +234,7 @@ function Library:Notify(message, type, duration)
         AutomaticSize = Enum.AutomaticSize.Y,
         Font = self.Fonts.UI,
         Text = message,
-        TextColor3 = self.Theme.Text,
+        TextColor3 = self.FontColor,
         TextSize = 14,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -251,7 +248,7 @@ function Library:Notify(message, type, duration)
         Size = UDim2.new(0, 24, 0, 24),
         Font = self.Fonts.UI,
         Text = "✕",
-        TextColor3 = self.Theme.TextSecondary,
+        TextColor3 = self.FontColor,
         TextSize = 14,
         Parent = notification,
     })
@@ -285,8 +282,8 @@ end
 
 function Library:AddTooltip(text, instance)
     local tooltip = self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Surface,
-        BorderColor3 = self.Theme.Border,
+        BackgroundColor3 = self.MainColor,
+        BorderColor3 = self.OutlineColor,
         BorderSizePixel = 1,
         Size = UDim2.new(0, 0, 0, 0),
         Visible = false,
@@ -302,7 +299,7 @@ function Library:AddTooltip(text, instance)
         AutomaticSize = Enum.AutomaticSize.Y,
         Font = self.Fonts.UI,
         Text = text,
-        TextColor3 = self.Theme.Text,
+        TextColor3 = self.FontColor,
         TextSize = 12,
         TextWrapped = true,
         Parent = tooltip,
@@ -335,8 +332,8 @@ function Library:CreateWindow(title, options)
     
     -- Main window frame
     local window = self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Background,
-        BorderColor3 = self.Theme.Border,
+        BackgroundColor3 = self.BackgroundColor,
+        BorderColor3 = self.OutlineColor,
         BorderSizePixel = 1,
         Position = options.Position or UDim2.fromOffset(100, 100),
         Size = options.Size or UDim2.fromOffset(600, 500),
@@ -360,7 +357,7 @@ function Library:CreateWindow(title, options)
     
     -- Title bar
     local titleBar = self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Surface,
+        BackgroundColor3 = self.MainColor,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 45),
         Parent = window,
@@ -368,7 +365,7 @@ function Library:CreateWindow(title, options)
     
     -- Accent line
     self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Primary,
+        BackgroundColor3 = self.AccentColor,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 2),
         Parent = titleBar,
@@ -381,7 +378,7 @@ function Library:CreateWindow(title, options)
         Size = UDim2.new(1, -100, 1, 0),
         Font = self.Fonts.UI,
         Text = title,
-        TextColor3 = self.Theme.Text,
+        TextColor3 = self.FontColor,
         TextSize = 16,
         TextXAlignment = Enum.TextXAlignment.Left,
         Parent = titleBar,
@@ -395,17 +392,17 @@ function Library:CreateWindow(title, options)
             Size = UDim2.new(0, 45, 0, 45),
             Font = self.Fonts.UI,
             Text = "✕",
-            TextColor3 = self.Theme.TextSecondary,
+            TextColor3 = self.FontColor,
             TextSize = 16,
             Parent = titleBar,
         })
         
         closeButton.MouseEnter:Connect(function()
-            closeButton.TextColor3 = self.Theme.Danger
+            closeButton.TextColor3 = Color3.fromRGB(255, 85, 85)
         end)
         
         closeButton.MouseLeave:Connect(function()
-            closeButton.TextColor3 = self.Theme.TextSecondary
+            closeButton.TextColor3 = self.FontColor
         end)
         
         closeButton.MouseButton1Click:Connect(function()
@@ -415,7 +412,7 @@ function Library:CreateWindow(title, options)
     
     -- Tab bar
     local tabBar = self:Create("Frame", {
-        BackgroundColor3 = self.Theme.Surface,
+        BackgroundColor3 = self.MainColor,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0, 45),
         Size = UDim2.new(1, 0, 0, 40),
@@ -479,7 +476,7 @@ function Library:CreateWindow(title, options)
                 Size = UDim2.new(0, 120, 1, 0),
                 Font = self.Fonts.UI,
                 Text = name,
-                TextColor3 = self.Theme.TextSecondary,
+                TextColor3 = self.FontColor,
                 TextSize = 14,
                 Parent = tabContainer,
             })
@@ -499,7 +496,7 @@ function Library:CreateWindow(title, options)
                 Size = UDim2.new(0.5, -8, 1, 0),
                 CanvasSize = UDim2.new(0, 0, 0, 0),
                 ScrollBarThickness = 4,
-                ScrollBarImageColor3 = self.Theme.Primary,
+                ScrollBarImageColor3 = self.AccentColor,
                 Parent = tabFrame,
             })
             
@@ -509,7 +506,7 @@ function Library:CreateWindow(title, options)
                 Size = UDim2.new(0.5, -8, 1, 0),
                 CanvasSize = UDim2.new(0, 0, 0, 0),
                 ScrollBarThickness = 4,
-                ScrollBarImageColor3 = self.Theme.Primary,
+                ScrollBarImageColor3 = self.AccentColor,
                 Parent = tabFrame,
             })
             
@@ -555,11 +552,11 @@ function Library:CreateWindow(title, options)
             
             button.MouseButton1Click:Connect(function()
                 if activeTab then
-                    activeTab.Button.TextColor3 = Library.Theme.TextSecondary
+                    activeTab.Button.TextColor3 = Library.FontColor
                     activeTab.Frame.Visible = false
                 end
                 activeTab = tabAPI
-                button.TextColor3 = Library.Theme.Primary
+                button.TextColor3 = Library.AccentColor
                 tabFrame.Visible = true
                 updateTabScroll()
             end)
@@ -569,7 +566,7 @@ function Library:CreateWindow(title, options)
             
             -- Activate first tab
             if #tabs == 1 then
-                button.TextColor3 = Library.Theme.Primary
+                button.TextColor3 = Library.AccentColor
                 tabFrame.Visible = true
                 activeTab = tabAPI
             end
@@ -580,8 +577,8 @@ function Library:CreateWindow(title, options)
         AddGroupbox = function(tab, side, title)
             -- Create groupbox frame
             local groupbox = self:Create("Frame", {
-                BackgroundColor3 = self.Theme.Surface,
-                BorderColor3 = self.Theme.Border,
+                BackgroundColor3 = self.MainColor,
+                BorderColor3 = self.OutlineColor,
                 BorderSizePixel = 1,
                 Size = UDim2.new(1, 0, 0, 0),
                 AutomaticSize = Enum.AutomaticSize.Y,
@@ -591,7 +588,7 @@ function Library:CreateWindow(title, options)
             
             -- Header
             local header = self:Create("Frame", {
-                BackgroundColor3 = self.Theme.Background,
+                BackgroundColor3 = self.BackgroundColor,
                 BorderSizePixel = 0,
                 Size = UDim2.new(1, 0, 0, 35),
                 Parent = groupbox,
@@ -599,7 +596,7 @@ function Library:CreateWindow(title, options)
             
             -- Header accent
             self:Create("Frame", {
-                BackgroundColor3 = self.Theme.Primary,
+                BackgroundColor3 = self.AccentColor,
                 BorderSizePixel = 0,
                 Size = UDim2.new(0, 3, 1, 0),
                 Parent = header,
@@ -612,7 +609,7 @@ function Library:CreateWindow(title, options)
                 Size = UDim2.new(1, -32, 1, 0),
                 Font = self.Fonts.UI,
                 Text = title,
-                TextColor3 = self.Theme.Text,
+                TextColor3 = self.FontColor,
                 TextSize = 14,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 Parent = header,
@@ -640,40 +637,36 @@ function Library:CreateWindow(title, options)
                 Container = container,
                 Layout = contentLayout,
                 
-                AddButton = function(text, callback, options)
-                    options = options or {}
-                    
+                AddButton = function(text, callback, doubleClick)
                     local button = self:Create("TextButton", {
-                        BackgroundColor3 = self.Theme.Background,
-                        BorderColor3 = self.Theme.Border,
+                        BackgroundColor3 = self.BackgroundColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Size = UDim2.new(1, 0, 0, 32),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         Parent = container,
                     })
                     AddRoundedCorners(button, 6)
                     
-                    -- Store callback
                     button.Callback = callback
                     
-                    -- Hover effect
                     button.MouseEnter:Connect(function()
                         TweenService:Create(button, TweenInfo.new(0.2), {
-                            BackgroundColor3 = self.Theme.Primary
+                            BackgroundColor3 = self.AccentColor
                         }):Play()
                     end)
                     
                     button.MouseLeave:Connect(function()
                         TweenService:Create(button, TweenInfo.new(0.2), {
-                            BackgroundColor3 = self.Theme.Background
+                            BackgroundColor3 = self.BackgroundColor
                         }):Play()
                     end)
                     
-                    button.MouseButton1Click:Connect(function()
-                        if options.DoubleClick then
+                    if doubleClick then
+                        button.MouseButton1Click:Connect(function()
                             if not button.DoubleClickReady then
                                 button.DoubleClickReady = true
                                 local originalText = button.Text
@@ -689,14 +682,11 @@ function Library:CreateWindow(title, options)
                                 if callback then callback() end
                                 button.Text = text
                             end
-                        else
+                        end)
+                    else
+                        button.MouseButton1Click:Connect(function()
                             if callback then callback() end
-                        end
-                    end)
-                    
-                    -- Add tooltip if provided
-                    if options.Tooltip then
-                        self:AddTooltip(options.Tooltip, button)
+                        end)
                     end
                     
                     return button
@@ -716,14 +706,14 @@ function Library:CreateWindow(title, options)
                     })
                     
                     local toggleButton = self:Create("TextButton", {
-                        BackgroundColor3 = toggle.Value and self.Theme.Primary or self.Theme.Background,
-                        BorderColor3 = self.Theme.Border,
+                        BackgroundColor3 = toggle.Value and self.AccentColor or self.BackgroundColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new(0, 0, 0, 4),
                         Size = UDim2.new(0, 24, 0, 24),
                         Font = self.Fonts.UI,
                         Text = toggle.Value and "✓" or "",
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         Parent = toggleFrame,
                     })
@@ -735,7 +725,7 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, -32, 1, 0),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = toggleFrame,
@@ -745,19 +735,14 @@ function Library:CreateWindow(title, options)
                         toggle.Value = value
                         toggleButton.Text = value and "✓" or ""
                         TweenService:Create(toggleButton, TweenInfo.new(0.2), {
-                            BackgroundColor3 = value and Library.Theme.Primary or Library.Theme.Background
+                            BackgroundColor3 = value and Library.AccentColor or Library.BackgroundColor
                         }):Play()
-                        self:AttemptSave()
                         if callback then callback(value) end
                     end
                     
                     toggleButton.MouseButton1Click:Connect(function()
                         toggle:SetValue(not toggle.Value)
                     end)
-                    
-                    if options and options.Tooltip then
-                        self:AddTooltip(options.Tooltip, label)
-                    end
                     
                     Toggles[id] = toggle
                     return toggle
@@ -784,7 +769,7 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, 0, 0, 20),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = sliderFrame,
@@ -795,15 +780,15 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, -16, 0, 20),
                         Font = self.Fonts.Monospace,
                         Text = tostring(slider.Value) .. (suffix or ""),
-                        TextColor3 = self.Theme.Primary,
+                        TextColor3 = self.AccentColor,
                         TextSize = 12,
                         TextXAlignment = Enum.TextXAlignment.Right,
                         Parent = sliderFrame,
                     })
                     
                     local sliderBg = self:Create("Frame", {
-                        BackgroundColor3 = self.Theme.Background,
-                        BorderColor3 = self.Theme.Border,
+                        BackgroundColor3 = self.BackgroundColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new(0, 0, 0, 25),
                         Size = UDim2.new(1, 0, 0, 4),
@@ -812,7 +797,7 @@ function Library:CreateWindow(title, options)
                     AddRoundedCorners(sliderBg, 2)
                     
                     local sliderFill = self:Create("Frame", {
-                        BackgroundColor3 = self.Theme.Primary,
+                        BackgroundColor3 = self.AccentColor,
                         BorderSizePixel = 0,
                         Size = UDim2.new((slider.Value - slider.Min) / (slider.Max - slider.Min), 0, 1, 0),
                         Parent = sliderBg,
@@ -820,8 +805,8 @@ function Library:CreateWindow(title, options)
                     AddRoundedCorners(sliderFill, 2)
                     
                     local sliderHandle = self:Create("TextButton", {
-                        BackgroundColor3 = self.Theme.Primary,
-                        BorderColor3 = self.Theme.PrimaryDark,
+                        BackgroundColor3 = self.AccentColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new((slider.Value - slider.Min) / (slider.Max - slider.Min), -6, 0, -4),
                         Size = UDim2.new(0, 12, 0, 12),
@@ -843,7 +828,6 @@ function Library:CreateWindow(title, options)
                         sliderHandle:TweenPosition(UDim2.new(percent, -6, 0, -4), "Out", "Quad", 0.1, true)
                         valueLabel.Text = tostring(value) .. (suffix or "")
                         if callback then callback(value) end
-                        self:AttemptSave()
                     end
                     
                     local dragging = false
@@ -870,22 +854,25 @@ function Library:CreateWindow(title, options)
                     return slider
                 end,
                 
-                AddDropdown = function(id, text, values, multi, default, callback)
+                AddDropdown = function(id, text, values, default, callback, multi)
                     local dropdown = {
                         Values = values,
                         Multi = multi or false,
-                        Value = multi and {} or nil,
+                        Value = nil,
                         Type = "Dropdown",
                         Callback = callback or function() end,
                         Open = false,
                     }
                     
-                    if not multi and default then
-                        dropdown.Value = default
-                    elseif multi and default then
-                        for _, v in ipairs(default) do
-                            dropdown.Value[v] = true
+                    if multi then
+                        dropdown.Value = {}
+                        if default then
+                            for _, v in ipairs(default) do
+                                dropdown.Value[v] = true
+                            end
                         end
+                    else
+                        dropdown.Value = default or values[1]
                     end
                     
                     local dropdownFrame = self:Create("Frame", {
@@ -900,13 +887,12 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, 0, 0, 20),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = dropdownFrame,
                     })
                     
-                    -- Display text for selected value
                     local displayText = ""
                     if not multi and dropdown.Value then
                         displayText = dropdown.Value
@@ -916,19 +902,17 @@ function Library:CreateWindow(title, options)
                             if v then table.insert(selected, k) end
                         end
                         displayText = #selected > 0 and table.concat(selected, ", ") or "Select..."
-                    else
-                        displayText = "Select..."
                     end
                     
                     local selectButton = self:Create("TextButton", {
-                        BackgroundColor3 = self.Theme.Background,
-                        BorderColor3 = self.Theme.Border,
+                        BackgroundColor3 = self.BackgroundColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new(0, 0, 0, 22),
                         Size = UDim2.new(1, 0, 0, 30),
                         Font = self.Fonts.UI,
                         Text = displayText,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 13,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = dropdownFrame,
@@ -941,14 +925,14 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(0, 20, 1, 0),
                         Font = self.Fonts.UI,
                         Text = "▼",
-                        TextColor3 = self.Theme.TextSecondary,
+                        TextColor3 = self.FontColor,
                         TextSize = 12,
                         Parent = selectButton,
                     })
                     
                     local dropdownList = self:Create("Frame", {
-                        BackgroundColor3 = self.Theme.Surface,
-                        BorderColor3 = self.Theme.Border,
+                        BackgroundColor3 = self.MainColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new(0, 0, 1, 2),
                         Size = UDim2.new(1, 0, 0, 0),
@@ -967,7 +951,6 @@ function Library:CreateWindow(title, options)
                     })
                     
                     local function updateDropdownList()
-                        -- Clear existing items
                         for _, child in ipairs(dropdownList:GetChildren()) do
                             if child:IsA("TextButton") then
                                 child:Destroy()
@@ -978,25 +961,25 @@ function Library:CreateWindow(title, options)
                             local isSelected = multi and dropdown.Value[value] or dropdown.Value == value
                             
                             local item = self:Create("TextButton", {
-                                BackgroundColor3 = isSelected and self.Theme.Primary or self.Theme.Surface,
+                                BackgroundColor3 = isSelected and self.AccentColor or self.MainColor,
                                 BorderSizePixel = 0,
                                 Size = UDim2.new(1, 0, 0, 30),
                                 Font = self.Fonts.UI,
                                 Text = value,
-                                TextColor3 = self.Theme.Text,
+                                TextColor3 = self.FontColor,
                                 TextSize = 13,
                                 Parent = dropdownList,
                             })
                             
                             item.MouseEnter:Connect(function()
                                 if not (multi and dropdown.Value[value]) and dropdown.Value ~= value then
-                                    item.BackgroundColor3 = self.Theme.Primary
+                                    item.BackgroundColor3 = self.AccentColor
                                 end
                             end)
                             
                             item.MouseLeave:Connect(function()
                                 local stillSelected = multi and dropdown.Value[value] or dropdown.Value == value
-                                item.BackgroundColor3 = stillSelected and self.Theme.Primary or self.Theme.Surface
+                                item.BackgroundColor3 = stillSelected and self.AccentColor or self.MainColor
                             end)
                             
                             item.MouseButton1Click:Connect(function()
@@ -1017,7 +1000,6 @@ function Library:CreateWindow(title, options)
                                 
                                 updateDropdownList()
                                 if callback then callback(dropdown.Value) end
-                                self:AttemptSave()
                             end)
                         end
                         
@@ -1049,12 +1031,6 @@ function Library:CreateWindow(title, options)
                         end
                         updateDropdownList()
                         if callback then callback(dropdown.Value) end
-                        self:AttemptSave()
-                    end
-                    
-                    function dropdown:SetValues(newValues)
-                        dropdown.Values = newValues
-                        updateDropdownList()
                     end
                     
                     Options[id] = dropdown
@@ -1079,23 +1055,23 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, 0, 0, 20),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = inputFrame,
                     })
                     
                     local textBox = self:Create("TextBox", {
-                        BackgroundColor3 = self.Theme.Background,
-                        BorderColor3 = self.Theme.Border,
+                        BackgroundColor3 = self.BackgroundColor,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new(0, 0, 0, 22),
                         Size = UDim2.new(1, 0, 0, 28),
                         Font = self.Fonts.UI,
-                        PlaceholderColor3 = self.Theme.TextSecondary,
+                        PlaceholderColor3 = self.FontColor,
                         PlaceholderText = placeholder or "",
                         Text = "",
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = inputFrame,
@@ -1114,7 +1090,6 @@ function Library:CreateWindow(title, options)
                             input.Value = newValue
                             if callback then callback(newValue) end
                         end
-                        self:AttemptSave()
                     end
                     
                     textBox:GetPropertyChangedSignal("Text"):Connect(updateValue)
@@ -1123,7 +1098,6 @@ function Library:CreateWindow(title, options)
                         input.Value = value
                         textBox.Text = tostring(value)
                         if callback then callback(value) end
-                        self:AttemptSave()
                     end
                     
                     Options[id] = input
@@ -1149,7 +1123,7 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, 0, 0, 20),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.Text,
+                        TextColor3 = self.FontColor,
                         TextSize = 14,
                         TextXAlignment = Enum.TextXAlignment.Left,
                         Parent = pickerFrame,
@@ -1157,7 +1131,7 @@ function Library:CreateWindow(title, options)
                     
                     local colorDisplay = self:Create("TextButton", {
                         BackgroundColor3 = colorPicker.Value,
-                        BorderColor3 = self.Theme.Border,
+                        BorderColor3 = self.OutlineColor,
                         BorderSizePixel = 1,
                         Position = UDim2.new(0, 0, 0, 22),
                         Size = UDim2.new(1, 0, 0, 28),
@@ -1166,128 +1140,58 @@ function Library:CreateWindow(title, options)
                     })
                     AddRoundedCorners(colorDisplay, 6)
                     
-                    -- Store RGB values
-                    local r, g, b = colorPicker.Value.R, colorPicker.Value.G, colorPicker.Value.B
-                    
                     local function updateDisplay()
-                        colorPicker.Value = Color3.new(r, g, b)
-                        colorDisplay.BackgroundColor3 = colorPicker.Value
                         if callback then callback(colorPicker.Value) end
-                        self:AttemptSave()
                     end
                     
-                    -- Create color picker popup (simplified with RGB sliders)
-                    local function showColorPicker()
-                        -- Create popup frame
-                        local popup = self:Create("Frame", {
-                            BackgroundColor3 = self.Theme.Surface,
-                            BorderColor3 = self.Theme.Border,
-                            BorderSizePixel = 1,
-                            Position = UDim2.fromOffset(Mouse.X + 10, Mouse.Y + 10),
-                            Size = UDim2.fromOffset(200, 150),
-                            ZIndex = 100,
-                            Parent = ScreenGui,
-                        })
-                        AddRoundedCorners(popup, 8)
-                        
-                        -- Title bar
-                        local popupTitle = self:Create("Frame", {
-                            BackgroundColor3 = self.Theme.Background,
-                            Size = UDim2.new(1, 0, 0, 30),
-                            Parent = popup,
-                        })
-                        
-                        self:Create("TextLabel", {
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(0, 8, 0, 0),
-                            Size = UDim2.new(1, -16, 1, 0),
-                            Font = self.Fonts.UI,
-                            Text = "Color Picker",
-                            TextColor3 = self.Theme.Text,
-                            TextSize = 12,
-                            TextXAlignment = Enum.TextXAlignment.Left,
-                            Parent = popupTitle,
-                        })
-                        
-                        local closeBtn = self:Create("TextButton", {
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(1, -25, 0, 0),
-                            Size = UDim2.new(0, 25, 0, 30),
-                            Font = self.Fonts.UI,
-                            Text = "✕",
-                            TextColor3 = self.Theme.TextSecondary,
-                            TextSize = 12,
-                            Parent = popupTitle,
-                        })
-                        
-                        -- Content
-                        local content = self:Create("Frame", {
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(0, 8, 0, 35),
-                            Size = UDim2.new(1, -16, 0, -43),
-                            Parent = popup,
-                        })
-                        
-                        -- RGB sliders
-                        local rSlider, gSlider, bSlider
-                        
-                        rSlider = groupboxAPI.AddSlider(nil, "Red", 0, 1, r, 2, "", function(val)
-                            r = val
-                            updateDisplay()
-                            if rSlider then rSlider:SetValue(r) end
-                        end)
-                        
-                        gSlider = groupboxAPI.AddSlider(nil, "Green", 0, 1, g, 2, "", function(val)
-                            g = val
-                            updateDisplay()
-                            if gSlider then gSlider:SetValue(g) end
-                        end)
-                        
-                        bSlider = groupboxAPI.AddSlider(nil, "Blue", 0, 1, b, 2, "", function(val)
-                            b = val
-                            updateDisplay()
-                            if bSlider then bSlider:SetValue(b) end
-                        end)
-                        
-                        -- Reparent sliders to popup content
-                        if rSlider and rSlider.Frame then rSlider.Frame.Parent = content end
-                        if gSlider and gSlider.Frame then gSlider.Frame.Parent = content end
-                        if bSlider and bSlider.Frame then bSlider.Frame.Parent = content end
-                        
-                        -- Update content layout
-                        self:Create("UIListLayout", {
-                            Padding = UDim.new(0, 4),
-                            FillDirection = Enum.FillDirection.Vertical,
-                            SortOrder = Enum.SortOrder.LayoutOrder,
-                            Parent = content,
-                        })
-                        
-                        closeBtn.MouseButton1Click:Connect(function()
-                            popup:Destroy()
-                        end)
-                        
-                        -- Close when clicking outside
-                        local function onInputBegan(input)
-                            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                                local mousePos = Vector2.new(Mouse.X, Mouse.Y)
-                                local absPos = popup.AbsolutePosition
-                                local absSize = popup.AbsoluteSize
-                                
-                                if mousePos.X < absPos.X or mousePos.X > absPos.X + absSize.X or
-                                   mousePos.Y < absPos.Y or mousePos.Y > absPos.Y + absSize.Y then
-                                    popup:Destroy()
-                                    InputService.InputBegan:Disconnect(connection)
-                                end
+                    colorDisplay.MouseButton1Click:Connect(function()
+                        colorPicker.Open = not colorPicker.Open
+                        if colorPicker.Open then
+                            -- Simple color picker popup
+                            local popup = self:Create("Frame", {
+                                BackgroundColor3 = self.MainColor,
+                                BorderColor3 = self.OutlineColor,
+                                BorderSizePixel = 1,
+                                Position = UDim2.fromOffset(Mouse.X + 10, Mouse.Y + 10),
+                                Size = UDim2.fromOffset(180, 100),
+                                ZIndex = 100,
+                                Parent = ScreenGui,
+                            })
+                            AddRoundedCorners(popup, 8)
+                            
+                            local hueSlider = groupboxAPI.AddSlider(nil, "Hue", 0, 1, 1, 2, "", function(val)
+                                colorPicker.Value = Color3.fromHSV(val, 1, 1)
+                                colorDisplay.BackgroundColor3 = colorPicker.Value
+                                updateDisplay()
+                            end)
+                            
+                            if hueSlider and hueSlider.Frame then
+                                hueSlider.Frame.Parent = popup
+                                hueSlider.Frame.Size = UDim2.new(1, -16, 0, 40)
+                                hueSlider.Frame.Position = UDim2.new(0, 8, 0, 8)
                             end
+                            
+                            local closeBtn = self:Create("TextButton", {
+                                BackgroundTransparency = 1,
+                                Position = UDim2.new(1, -25, 0, 0),
+                                Size = UDim2.new(0, 25, 0, 25),
+                                Font = self.Fonts.UI,
+                                Text = "✕",
+                                TextColor3 = self.FontColor,
+                                TextSize = 12,
+                                Parent = popup,
+                            })
+                            
+                            closeBtn.MouseButton1Click:Connect(function()
+                                popup:Destroy()
+                                colorPicker.Open = false
+                            end)
                         end
-                        
-                        local connection = InputService.InputBegan:Connect(onInputBegan)
-                    end
-                    
-                    colorDisplay.MouseButton1Click:Connect(showColorPicker)
+                    end)
                     
                     function colorPicker:SetValueRGB(color)
-                        r, g, b = color.R, color.G, color.B
+                        colorPicker.Value = color
+                        colorDisplay.BackgroundColor3 = color
                         updateDisplay()
                     end
                     
@@ -1297,7 +1201,7 @@ function Library:CreateWindow(title, options)
                 
                 AddDivider = function()
                     self:Create("Frame", {
-                        BackgroundColor3 = self.Theme.Border,
+                        BackgroundColor3 = self.OutlineColor,
                         BorderSizePixel = 0,
                         Size = UDim2.new(1, 0, 0, 1),
                         Parent = container,
@@ -1310,12 +1214,22 @@ function Library:CreateWindow(title, options)
                         Size = UDim2.new(1, 0, 0, 20),
                         Font = self.Fonts.UI,
                         Text = text,
-                        TextColor3 = self.Theme.TextSecondary,
+                        TextColor3 = self.FontColor,
                         TextSize = 12,
                         TextXAlignment = centered and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left,
                         Parent = container,
                     })
+                    
+                    function label:SetText(newText)
+                        label.Text = newText
+                    end
+                    
                     return label
+                end,
+                
+                AddKeyPicker = function(id, text, default, callback)
+                    -- KeyPicker acts like a toggle for now
+                    return groupboxAPI.AddToggle(id, text, default, callback)
                 end,
             }
             
@@ -1350,18 +1264,8 @@ function Library:CreateWindow(title, options)
     return windowAPI
 end
 
-function Library:AttemptSave()
-    if self.SaveManager then
-        self.SaveManager:Save()
-    end
-end
-
 function Library:Unload()
-    for _, connection in ipairs(self.Signals) do
-        connection:Disconnect()
-    end
     ScreenGui:Destroy()
-    
     if self.OnUnload then
         self.OnUnload()
     end
